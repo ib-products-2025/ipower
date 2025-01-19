@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=iroha
+      - POSTGRES_PASSWORD=iroha
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U iroha"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ipower_network
+
+  iroha:
+    build:
+      context: .
+      dockerfile: Dockerfile.iroha
+    ports:
+      - "50051:50051"
+    environment:
+      - IROHA_POSTGRES_HOST=postgres
+    volumes:
+      - ./iroha/conf:/opt/iroha_data/config
+      - ./iroha/keys:/opt/iroha_data/keys
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ipower_network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://iroha:iroha@postgres:5432/iroha
+      - IROHA_HOST=iroha:50051
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - postgres
+      - iroha
+    networks:
+      - ipower_network
+
+networks:
+  ipower_network:
+    driver: bridge
+
+volumes:
+  postgres_data:

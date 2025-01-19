@@ -1,0 +1,14 @@
+FROM hyperledger/iroha:latest
+
+# Create necessary directories
+RUN mkdir -p /opt/iroha_data/keys /opt/iroha_data/config
+
+# Copy configuration files
+COPY iroha/conf/config.docker /opt/iroha_data/config/config.docker
+COPY iroha/conf/genesis.block /opt/iroha_data/config/genesis.block
+COPY iroha/keys/node0.* /opt/iroha_data/keys/
+
+ENTRYPOINT ["irohad"]
+CMD ["--config", "/opt/iroha_data/config/config.docker", \
+     "--genesis_block", "/opt/iroha_data/config/genesis.block", \
+     "--keypair_name", "/opt/iroha_data/keys/node0"]
